@@ -1,9 +1,6 @@
 # ML project template
 
-
 This repository is a template directory for ML project and inspired by [upura](https://github.com/upura/ml-competition-template-titanic).
-
-
 
 ## Structures
 
@@ -20,9 +17,6 @@ This repository is a template directory for ML project and inspired by [upura](h
 ├── docker
 │   └── Dockerfile
 ├── features
-│   ├── __init__.py
-│   ├── base.py
-│   └── create.py
 ├── logs
 │   └── logger.py
 ├── models
@@ -30,6 +24,9 @@ This repository is a template directory for ML project and inspired by [upura](h
 ├── src
 ├── utils
 │   ├── __init__.py
+│   ├── data_loader.py
+│   ├── feature_base.py
+│   ├── feature_create.py
 │   └── convert_to_feather.py
 ├── .gitignore
 ├── LICENSE
@@ -51,7 +48,6 @@ This repository is a template directory for ML project and inspired by [upura](h
   - `notebooks`: contains EDA codes.
   - `src`: contains model source codes and project-specific useful codes.
   - `utils`: contains generally useful codes.
-
 
 ## Setup
 
