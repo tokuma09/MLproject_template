@@ -31,7 +31,6 @@ This repository is a template directory for ML project and inspired by [upura](h
 ├── utils
 │   ├── __init__.py
 │   └── convert_to_feather.py
-├── .dockerignore
 ├── .gitignore
 ├── LICENSE
 ├── README.md
