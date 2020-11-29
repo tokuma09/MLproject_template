@@ -7,7 +7,7 @@ This repository is a template directory for ML project and inspired by [upura](h
 ```
 .
 ├── configs
-│   └── config.yml
+│   └── config.json(not included here)
 ├── data
 │   ├── input
 │   │   ├── sample_submission.csv
@@ -18,7 +18,6 @@ This repository is a template directory for ML project and inspired by [upura](h
 │   └── Dockerfile
 ├── features
 ├── logs
-│   └── logger.py
 ├── models
 ├── notebooks
 ├── src
