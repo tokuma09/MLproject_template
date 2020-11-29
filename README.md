@@ -22,7 +22,6 @@ This repository is a template directory for ML project and inspired by [upura](h
 ├── notebooks
 ├── src
 ├── utils
-│   ├── __init__.py
 │   ├── data_loader.py
 │   ├── feature_base.py
 │   ├── feature_create.py
