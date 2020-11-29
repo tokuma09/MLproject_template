@@ -7,7 +7,7 @@ This repository is a template directory for ML project and inspired by [upura](h
 ```
 .
 ├── configs
-│   └── config.yml
+│   └── config.json(not included here)
 ├── data
 │   ├── input
 │   │   ├── sample_submission.csv
@@ -18,7 +18,6 @@ This repository is a template directory for ML project and inspired by [upura](h
 │   └── Dockerfile
 ├── features
 ├── logs
-│   └── logger.py
 ├── models
 ├── notebooks
 ├── src
@@ -56,3 +55,10 @@ To prepare docker container, it is useful to use `Makefile` in the project direc
 - Build docker image: `make build`
 - Run docker container: `make run`
 - train model and predict: `python run.py`
+
+## Actions
+
+- `cd utils && python convert_to_feather.py`: Convert csv files to feather files.
+- `python feature_create.py`: Create features in feather files.
+
+- `cd .. && python ./src/run.py`: Start learning.
