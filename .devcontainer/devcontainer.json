@@ -9,7 +9,13 @@
 		"terminal.integrated.shell.linux": null
 	},
 	// Add the IDs of extensions you want installed when the container is created.
-	"extensions": [],
+	"extensions": [
+		"donjayamanne.python-extension-pack",
+		"njpwerner.autodocstring",
+		"mhutchie.git-graph",
+		"ms-python.vscode-pylance",
+		"ms-vscode-remote.remote-ssh"
+	],
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	"appPort": [
 		"127.0.0.1:8888:8888",

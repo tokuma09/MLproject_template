@@ -18,9 +18,10 @@ def timer(name):
 
 def get_arguments():
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        '--force', '-f', action='store_true', help='Overwrite existing files'
-    )
+    parser.add_argument('--force',
+                        '-f',
+                        action='store_true',
+                        help='Overwrite existing files')
     return parser.parse_args()
 
 
@@ -48,10 +49,8 @@ class Feature(metaclass=ABCMeta):
         if self.__class__.__name__.isupper():
             self.name = self.__class__.__name__.lower()
         else:
-            self.name = re.sub(
-                "([A-Z])",
-                lambda x: "_" + x.group(1).lower(), self.__class__.__name__
-            ).lstrip('_')
+            self.name = re.sub("([A-Z])", lambda x: "_" + x.group(1).lower(),
+                               self.__class__.__name__).lstrip('_')
 
         self.train = pd.DataFrame()
         self.test = pd.DataFrame()
