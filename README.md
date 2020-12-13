@@ -60,4 +60,4 @@ To prepare docker container, it is useful to use `Makefile` in the project direc
 - `cd utils && python convert_to_feather.py`: Convert csv files to feather files.
 - `python feature_create.py`: Create features in feather files.
 
-- `cd .. && python ./src/run.py`: Start learning.
+- `cd .. && cd src && python run.py`: Start learning.
