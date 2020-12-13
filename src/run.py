@@ -1,17 +1,18 @@
-import pandas as pd
-import datetime
-from sklearn.model_selection import StratifiedKFold
 import argparse
+import datetime
 import json
-import numpy as np
-import mlflow
 import sys
+import warnings
 
+import mlflow
+import numpy as np
+import pandas as pd
+from sklearn.model_selection import KFold
+
+warnings.filterwarnings('ignore')
 sys.path.append('../utils')
-from data_loader import load_datasets, load_target
 from create_logger import create_logger
-
-from logistic import train_and_predict
+from data_loader import load_datasets, load_target
 
 if __name__ == '__main__':
 
@@ -22,7 +23,7 @@ if __name__ == '__main__':
 
     # parse command line parameters
     parser = argparse.ArgumentParser()
-    parser.add_argument('--model', type=str, default='logistic')
+    parser.add_argument('--model', type=str, default='lasso')
     parser.add_argument('--experiment', type=str,
                         default='Base')  # Base or Tuning
     parser.add_argument('--config', default='../config/default.json')
@@ -42,13 +43,20 @@ if __name__ == '__main__':
 
     # model parameters
     if options.model == 'logistic':
+        from logistic import train_and_predict
         params = config['logistic_params']
+
     elif options.model == 'rf':
+        from rf_reg import train_and_predict
         params = config['rf_params']
+
     elif options.model == 'lgbm':
+        from lgbm_reg import train_and_predict
         params = config['lgbm_params']
-    else:
-        params = config['logistic_params']
+
+    elif options.model == 'lasso':
+        from lasso import train_and_predict
+        params = config['lasso_params']
 
     # load data
     feats = config['features']
@@ -63,18 +71,22 @@ if __name__ == '__main__':
 
     # train model for each fold
     NUM_FOLDS = 3
-    kf = StratifiedKFold(n_splits=NUM_FOLDS, random_state=0)
+    kf = KFold(n_splits=NUM_FOLDS, random_state=0)
     logger.info(f'Number of Folds: {NUM_FOLDS}')
 
-    for train_index, valid_index in kf.split(X=X_train_all, y=y_train_all):
+    for train_index, valid_index in kf.split(X=X_train_all):
         X_train, X_valid = (X_train_all.iloc[train_index, :],
                             X_train_all.iloc[valid_index, :])
         y_train, y_valid = y_train_all[train_index], y_train_all[valid_index]
 
+        # log
+        y_train, y_valid = np.log(y_train), np.log(y_valid)
         y_pred, score, model = train_and_predict(X_train, X_valid, y_train,
                                                  y_valid, X_test, params,
                                                  logger)
 
+        # exp
+        y_pred = np.exp(y_pred)
         # save result
         y_preds.append(y_pred)
         models.append(model)
@@ -100,4 +112,5 @@ if __name__ == '__main__':
 
     sub.to_csv('../data/output/{0}_{1:%Y%m%d%H%M%S}_{2}.csv'.format(
         options.model, now, score),
-               index=False)
+               index=False,
+               header=None)
