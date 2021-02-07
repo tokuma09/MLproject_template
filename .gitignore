@@ -1,5 +1,11 @@
+# environment variable file
+my_env_file.env
+
 # jupyter notebook
 .ipynb
+
+# hydra
+src/outputs
 
 # mlflow
 mlruns
