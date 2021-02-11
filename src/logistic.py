@@ -2,8 +2,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score
 
 
-def train_and_predict(X_train, X_valid, y_train, y_valid, X_test, params,
-                      logger):
+def train_and_predict(X_train, X_valid, y_train, y_valid, X_test, params):
 
     # データセットを生成する
     model = LogisticRegression(**params)

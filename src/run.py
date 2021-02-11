@@ -4,9 +4,13 @@ import os
 import sys
 
 import hydra
+import neptune
 import numpy as np
 import pandas as pd
-from omegaconf import DictConfig, OmegaConf
+from neptunecontrib.monitoring.sklearn import (log_classification_report_chart,
+                                               log_confusion_matrix_chart,
+                                               log_scores)
+from omegaconf import DictConfig
 from sklearn.model_selection import StratifiedKFold
 
 sys.path.append('../utils')
@@ -14,10 +18,12 @@ from create_logger import create_logger
 from data_loader import load_datasets, load_target
 from logging_mlflow import logging_result
 
+# global variable
+
 # JSTとUTCの差分
 DIFF_JST_FROM_UTC = 9
-
 NUM_FOLDS = 3
+API_TOKEN = os.environ.get('NEPTUNE_API_TOKEN')
 
 
 @hydra.main(config_path='../config', config_name='config')
@@ -27,19 +33,14 @@ def run(config: DictConfig) -> None:
     #  Settings
     # -------------------------
 
-    # create logger
     now = datetime.datetime.utcnow() + datetime.timedelta(
         hours=DIFF_JST_FROM_UTC)
-
-    # create logger
-    logger = create_logger(config['model']['name'], now)
 
     # get base directory
     base_dir = os.path.dirname(hydra.utils.get_original_cwd())
 
     # load training API
     module = importlib.import_module(config['model']['file'])
-    print(module.train_and_predict)
 
     # ---------------------------------
     # load data
@@ -47,10 +48,19 @@ def run(config: DictConfig) -> None:
 
     feats = config['features']
     target_name = config['target_name']
-    params = config['model']['parameters']
+    params = dict(config['model']['parameters'])
 
     X_train_all, X_test = load_datasets(feats, base_dir=base_dir)
     y_train_all = load_target(target_name, base_dir=base_dir)
+
+    # start logging
+    neptune.init(api_token=API_TOKEN,
+                 project_qualified_name='tokuma09/Example')
+    neptune.create_experiment(params=params,
+                              name='sklearn-quick',
+                              tags=[config['model']['name']])
+
+    print(neptune.get_experiment().id)
 
     # ---------------------------
     # train model using CV
@@ -70,20 +80,29 @@ def run(config: DictConfig) -> None:
         y_train, y_valid = y_train_all[train_index], y_train_all[valid_index]
 
         y_pred, score, model = module.train_and_predict(
-            X_train, X_valid, y_train, y_valid, X_test, params, logger)
+            X_train, X_valid, y_train, y_valid, X_test, params)
 
         # save result
         y_preds.append(y_pred)
         models.append(model)
         scores.append(score)
 
+        # logging result
+        log_scores(model, X_valid, y_valid, name='valid')
+        log_classification_report_chart(model, X_train, X_valid, y_train,
+                                        y_valid)
+        log_confusion_matrix_chart(model, X_train, X_valid, y_train, y_valid)
+
     # -------------------------
     #  CV score
     # -------------------------
     score = np.mean(scores)
 
-    logger.info(f'CV scores: {scores}')
-    logger.info(f'CV averaged: {score}')
+    neptune.log_metric('CV score', score)
+    for i in range(NUM_FOLDS):
+        neptune.log_metric('fold score', scores[i])
+
+    neptune.stop()
 
     # aggregate result
     y_sub = sum(y_preds) / len(y_preds)
