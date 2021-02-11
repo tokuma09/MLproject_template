@@ -1,136 +1,126 @@
-import argparse
 import datetime
-import json
+import importlib
+import os
 import sys
-import warnings
 
+import hydra
+import neptune
 import numpy as np
 import pandas as pd
-from sklearn.model_selection import KFold
+from neptunecontrib.monitoring.sklearn import (log_classification_report_chart,
+                                               log_confusion_matrix_chart,
+                                               log_scores)
+from omegaconf import DictConfig
+from sklearn.model_selection import StratifiedKFold
 
-warnings.filterwarnings('ignore')
 sys.path.append('../utils')
 from create_logger import create_logger
 from data_loader import load_datasets, load_target
-
 from logging_mlflow import logging_result
 
-if __name__ == '__main__':
+# global variable
 
-    # JSTとUTCの差分
-    DIFF_JST_FROM_UTC = 9
+# JSTとUTCの差分
+DIFF_JST_FROM_UTC = 9
+NUM_FOLDS = 3
+API_TOKEN = os.environ.get('NEPTUNE_API_TOKEN')
+
+
+@hydra.main(config_path='../config', config_name='config')
+def run(config: DictConfig) -> None:
+
+    # -------------------------
+    #  Settings
+    # -------------------------
+
     now = datetime.datetime.utcnow() + datetime.timedelta(
         hours=DIFF_JST_FROM_UTC)
 
-    # parse command line parameters
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--model', type=str, default='lasso')
-    parser.add_argument('--experiment', type=str,
-                        default='Base')  # Base or Tuning
-    parser.add_argument('--config', default='../config/default.json')
-    options = parser.parse_args()
-    config = json.load(open(options.config))
+    # get base directory
+    base_dir = os.path.dirname(hydra.utils.get_original_cwd())
 
-    # create logger
-    logger = create_logger(options.model, now)
-
-    # ---------------------
-    # load model settings
-    # FIXME: use hydra
-    # ---------------------
-
-    # model parameters
-    if options.model == 'logistic':
-        from logistic import train_and_predict
-        params = config['logistic_params']
-
-    elif options.model == 'rf':
-        from rf_reg import train_and_predict
-        params = config['rf_params']
-
-    elif options.model == 'lgbm':
-        from lgbm_reg import train_and_predict
-        params = config['lgbm_params']
-
-    elif options.model == 'lasso':
-        from lasso import train_and_predict
-        params = config['lasso_params']
+    # load training API
+    module = importlib.import_module(config['model']['file'])
 
     # ---------------------------------
     # load data
     # ---------------------------------
+
     feats = config['features']
     target_name = config['target_name']
+    params = dict(config['model']['parameters'])
 
-    X_train_all, X_test = load_datasets(feats)
-    y_train_all = load_target(target_name)
+    X_train_all, X_test = load_datasets(feats, base_dir=base_dir)
+    y_train_all = load_target(target_name, base_dir=base_dir)
 
+    # start logging
+    neptune.init(api_token=API_TOKEN,
+                 project_qualified_name='tokuma09/Example')
+    neptune.create_experiment(params=params,
+                              name='sklearn-quick',
+                              tags=[config['model']['name']])
+
+    print(neptune.get_experiment().id)
+
+    # ---------------------------
+    # train model using CV
+    # ---------------------------
     y_preds = []
     scores = []
     models = []
 
-    # -------------------------------
-    # train model for each fold
-    # -------------------------------
+    kf = StratifiedKFold(n_splits=NUM_FOLDS, shuffle=True, random_state=0)
 
-    NUM_FOLDS = 3
-    kf = KFold(n_splits=NUM_FOLDS, random_state=0)
-    logger.info(f'Number of Folds: {NUM_FOLDS}')
-
-    for ind, (train_index, valid_index) in enumerate(kf.split(X=X_train_all)):
+    for ind, (train_index,
+              valid_index) in enumerate(kf.split(X=X_train_all,
+                                                 y=y_train_all)):
 
         X_train, X_valid = (X_train_all.iloc[train_index, :],
                             X_train_all.iloc[valid_index, :])
         y_train, y_valid = y_train_all[train_index], y_train_all[valid_index]
 
-        # log
-        y_train, y_valid = np.log(y_train), np.log(y_valid)
+        y_pred, score, model = module.train_and_predict(
+            X_train, X_valid, y_train, y_valid, X_test, params)
 
-        y_pred, score, model = train_and_predict(X_train, X_valid, y_train,
-                                                 y_valid, X_test, params,
-                                                 logger)
-
-        # exp
-        y_pred = np.exp(y_pred)
         # save result
         y_preds.append(y_pred)
         models.append(model)
         scores.append(score)
+
+        # logging result
+        log_scores(model, X_valid, y_valid, name='valid')
+        log_classification_report_chart(model, X_train, X_valid, y_train,
+                                        y_valid)
+        log_confusion_matrix_chart(model, X_train, X_valid, y_train, y_valid)
 
     # -------------------------
     #  CV score
     # -------------------------
     score = np.mean(scores)
 
-    logger.info(f'CV scores: {scores}')
-    logger.info(f'CV averaged: {score}')
+    neptune.log_metric('CV score', score)
+    for i in range(NUM_FOLDS):
+        neptune.log_metric('fold score', scores[i])
 
-    # ------------------------------------
-    # inspection and logging
-    # ------------------------------------
-    # TODO: add model inspection functions
-    # model_inspect(model, features)
+    neptune.stop()
 
-    # save prediction results
-    logging_result(options, params, scores, models, logger)
-
-    # -------------------------------------------------------
-    # prepare submission data
-    # -------------------------------------------------------
-
-    # create submit data
-    ID_name = config['ID_name']
-    sub = pd.DataFrame(pd.read_csv('../data/input/test.csv')[ID_name])
-
+    # aggregate result
     y_sub = sum(y_preds) / len(y_preds)
-    y_sub = y_sub.reshape(-1, 1)
-    print(y_sub.shape)
     if y_sub.shape[1] > 1:
         y_sub = np.argmax(y_sub, axis=1)
 
-    sub[target_name] = y_sub
+    # prepare submit data
+    ID_name = config['ID_name']
+    sub = pd.DataFrame(
+        pd.read_csv(os.path.join(base_dir, 'data/input/test.csv'))[ID_name])
 
-    sub.to_csv('../data/output/{0}_{1:%Y%m%d%H%M%S}_{2}.csv'.format(
-        options.model, now, score),
+    sub[target_name] = y_sub
+    sub.to_csv(os.path.join(base_dir,
+                            'data/output/{0}_{1:%Y%m%d%H%M%S}_{2}.csv').format(
+                                config['model']['name'], now, score),
                index=False,
                header=None)
+
+
+if __name__ == '__main__':
+    run()

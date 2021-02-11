@@ -10,16 +10,44 @@ all = pd.concat([train, test])
 num_train = len(train)
 
 
-class Sex(Feature):
+class Sepal_length(Feature):
     def __init__(self):
         super().__init__()
-        self.mapping = {"male": 0, "female": 1}
 
     def create_features(self):
-        col_name = 'Sex'
-        data = all[col_name].map(self.mapping)
-        self.train[col_name] = data.iloc[:num_train]
-        self.test[col_name] = data.iloc[num_train:]
+        col_name = 'sepal_length'
+        self.train[col_name] = all[col_name].iloc[:num_train]
+        self.test[col_name] = all[col_name].iloc[num_train:]
+
+
+class Sepal_width(Feature):
+    def __init__(self):
+        super().__init__()
+
+    def create_features(self):
+        col_name = 'sepal_width'
+        self.train[col_name] = all[col_name].iloc[:num_train]
+        self.test[col_name] = all[col_name].iloc[num_train:]
+
+
+class Petal_length(Feature):
+    def __init__(self):
+        super().__init__()
+
+    def create_features(self):
+        col_name = 'petal_length'
+        self.train[col_name] = all[col_name].iloc[:num_train]
+        self.test[col_name] = all[col_name].iloc[num_train:]
+
+
+class Petal_width(Feature):
+    def __init__(self):
+        super().__init__()
+
+    def create_features(self):
+        col_name = 'petal_width'
+        self.train[col_name] = all[col_name].iloc[:num_train]
+        self.test[col_name] = all[col_name].iloc[num_train:]
 
 
 if __name__ == '__main__':

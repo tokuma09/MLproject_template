@@ -1,0 +1,9 @@
+defaults:
+  - model: lgbm_class
+
+features: ["sepal_length",
+           "sepal_width",
+           "petal_length",
+           "petal_width"]
+target_name: "target"
+ID_name: "index"

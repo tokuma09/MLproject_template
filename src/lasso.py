@@ -3,8 +3,7 @@ from sklearn.metrics import mean_squared_error
 import numpy as np
 
 
-def train_and_predict(X_train, X_valid, y_train, y_valid, X_test, params,
-                      logger):
+def train_and_predict(X_train, X_valid, y_train, y_valid, X_test, params):
 
     # データセットを生成する
     model = Lasso(**params)

@@ -1,0 +1,11 @@
+# @package _group_
+parameters:
+  penalty: "l1"
+  C: 100.0
+  fit_intercept: true
+  class_weight: null
+  random_state: 2
+  solver: "saga"
+
+file: 'logistic'
+name: 'logistic'
