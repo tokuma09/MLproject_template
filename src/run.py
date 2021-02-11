@@ -8,9 +8,11 @@ import neptune
 import numpy as np
 import pandas as pd
 from omegaconf import DictConfig
+from sklearn.metrics import accuracy_score
 from sklearn.model_selection import StratifiedKFold
 
 sys.path.append('../utils')
+import random
 
 from data_loader import load_datasets, load_target
 from logging_metrics import logging_classification
@@ -21,6 +23,7 @@ from logging_metrics import logging_classification
 DIFF_JST_FROM_UTC = 9
 NUM_FOLDS = 3
 API_TOKEN = os.environ.get('NEPTUNE_API_TOKEN')
+scoring = accuracy_score  # evaluation metrics
 
 
 @hydra.main(config_path='../config', config_name='config')
@@ -63,7 +66,8 @@ def run(config: DictConfig) -> None:
     # ---------------------------
     # train model using CV
     # ---------------------------
-    y_preds = []
+    y_test_preds = []
+    oof_preds = []
     scores = []
     models = []
 
@@ -77,16 +81,26 @@ def run(config: DictConfig) -> None:
                             X_train_all.iloc[valid_index, :])
         y_train, y_valid = y_train_all[train_index], y_train_all[valid_index]
 
-        y_pred, score, model = module.train_and_predict(
-            X_train, X_valid, y_train, y_valid, X_test, params, ind)
+        res = module.train_and_predict(X_train, X_valid, y_train, y_valid,
+                                       X_test, params, ind, scoring)
+
+        # for evaluation and stacking
+        if res['y_val_pred'].ndim > 1:
+            y_val_pred = np.argmax(res['y_val_pred'], axis=1)
+        else:
+            y_val_pred = res['y_val_pred']
+
+        oof_pred = pd.DataFrame([y_valid.index, y_val_pred]).T
+        oof_pred.columns = ['index', 'pred']
 
         # save result
-        y_preds.append(y_pred)
-        models.append(model)
-        scores.append(score)
+        y_test_preds.append(res['y_test_pred'])
+        oof_preds.append(oof_pred)
+        models.append(res['model'])
+        scores.append(res['score'])
 
         # logging result
-        logging_classification(y_valid, model.predict(X_valid))
+        logging_classification(y_valid, res['y_val_pred'])
 
     # -------------------------
     #  CV score
@@ -99,8 +113,30 @@ def run(config: DictConfig) -> None:
 
     neptune.stop()
 
+    # ---------------------------------
+    # save oof result
+    # ---------------------------------
+
+    # concat oof result and save
+    df_oof = pd.concat(oof_preds)
+    df_oof = df_oof.sort_values(by='index').reset_index(drop=True)
+
+    # for technical reason
+    df_temp = pd.DataFrame(df_oof['pred'])
+    df_temp.columns = [f'pred_{random.randint(1, 100000)}']
+
+    df_temp.to_feather(
+        os.path.join(
+            base_dir,
+            f"features/valid_pred_{config['model']['name']}_score_{score.round(3)}.feather"
+        ))
+
+    # ---------------------------------
+    # prepare submission
+    # ---------------------------------
+
     # aggregate result
-    y_sub = sum(y_preds) / len(y_preds)
+    y_sub = sum(y_test_preds) / len(y_test_preds)
     if y_sub.shape[1] > 1:
         y_sub = np.argmax(y_sub, axis=1)
 
