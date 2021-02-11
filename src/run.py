@@ -7,16 +7,13 @@ import hydra
 import neptune
 import numpy as np
 import pandas as pd
-from neptunecontrib.monitoring.sklearn import (log_classification_report_chart,
-                                               log_confusion_matrix_chart,
-                                               log_scores)
 from omegaconf import DictConfig
 from sklearn.model_selection import StratifiedKFold
 
 sys.path.append('../utils')
-from create_logger import create_logger
+
 from data_loader import load_datasets, load_target
-from logging_mlflow import logging_result
+from logging_metrics import logging_classification
 
 # global variable
 
@@ -58,6 +55,7 @@ def run(config: DictConfig) -> None:
                  project_qualified_name='tokuma09/Example')
     neptune.create_experiment(params=params,
                               name='sklearn-quick',
+                              upload_stdout=False,
                               tags=[config['model']['name']])
 
     print(neptune.get_experiment().id)
@@ -80,7 +78,7 @@ def run(config: DictConfig) -> None:
         y_train, y_valid = y_train_all[train_index], y_train_all[valid_index]
 
         y_pred, score, model = module.train_and_predict(
-            X_train, X_valid, y_train, y_valid, X_test, params)
+            X_train, X_valid, y_train, y_valid, X_test, params, ind)
 
         # save result
         y_preds.append(y_pred)
@@ -88,10 +86,7 @@ def run(config: DictConfig) -> None:
         scores.append(score)
 
         # logging result
-        log_scores(model, X_valid, y_valid, name='valid')
-        log_classification_report_chart(model, X_train, X_valid, y_train,
-                                        y_valid)
-        log_confusion_matrix_chart(model, X_train, X_valid, y_train, y_valid)
+        logging_classification(y_valid, model.predict(X_valid))
 
     # -------------------------
     #  CV score
