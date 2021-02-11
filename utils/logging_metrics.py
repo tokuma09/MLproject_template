@@ -4,8 +4,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 from neptune import log_image, log_metric
 from sklearn.metrics import (accuracy_score, confusion_matrix,
+                             explained_variance_score, mean_absolute_error,
+                             mean_squared_error,
                              precision_recall_fscore_support, precision_score,
-                             recall_score)
+                             r2_score, recall_score)
 
 
 def logging_classification(y_true, y_pred, name=None):
@@ -69,23 +71,51 @@ def logging_classification(y_true, y_pred, name=None):
 
 
 def logging_regression(y_true, y_pred):
-    pass
-    """
-    evs = explained_variance_score(y, y_pred)
-            me = max_error(y, y_pred)
-            mae = mean_absolute_error(y, y_pred)
-            r2 = r2_score(y, y_pred)
+    """logging_regression logging metrics for regression problem
 
-            exp.log_metric('evs_{}_sklearn'.format(name), evs)
-            exp.log_metric('me_{}_sklearn'.format(name), me)
-            exp.log_metric('mae_{}_sklearn'.format(name), mae)
-            exp.log_metric('r2_{}_sklearn'.format(name), r2)
+    - rmse
+    - mae
+    - r2
+    - explained variance
+    - yyplot
+
+    Parameters
+    ----------
+    y_true : 1d array like
+        ground truth target value
+    y_pred : 1d array like
+        estimated target value
+
+    Returns
+    -------
+    None
+
     """
     # rmse
+    rmse = np.sqrt(mean_squared_error(y_true, y_pred))
+    log_metric('RMSE', rmse)
+
     # mae
+    mae = mean_absolute_error(y_true, y_pred)
+    log_metric('MAE', mae)
+
     # r2
+    r2 = r2_score(y_true, y_pred)
+    log_metric('R2', r2)
+
+    # explained variance
+    evs = explained_variance_score(y_true, y_pred)
+    log_metric('Explained Variance', evs)
+
     # 相関
-    # 予測結果とのscatter plot
+    corr = np.corrcoef(y_true, y_pred)[0, 1]
+    log_metric('corr', corr)
+
+    # scatter plot
+    fig = yyplot(y_true, y_pred)
+    log_image('performance charts', fig)
+
+    return None
 
 
 def plot_confusion_matrix(cm,
@@ -166,5 +196,23 @@ def plot_confusion_matrix(cm,
     plt.xlabel('Predicted label\naccuracy={:0.4f}; misclass={:0.4f}'.format(
         accuracy, misclass))
 
-    #plt.show()
+    # plt.show()
+    return fig
+
+
+def yyplot(y_true, y_pred):
+    yvalues = np.concatenate([y_true.flatten(), y_pred.flatten()])
+    ymin, ymax, yrange = np.amin(yvalues), np.amax(yvalues), np.ptp(yvalues)
+    fig = plt.figure(figsize=(8, 8))
+    plt.scatter(y_true, y_pred)
+    plt.plot([ymin - yrange * 0.01, ymax + yrange * 0.01],
+             [ymin - yrange * 0.01, ymax + yrange * 0.01])
+    plt.xlim(ymin - yrange * 0.01, ymax + yrange * 0.01)
+    plt.ylim(ymin - yrange * 0.01, ymax + yrange * 0.01)
+    plt.xlabel('y_true', fontsize=16)
+    plt.ylabel('y_pred', fontsize=16)
+    plt.title('Ground truth vs Prediction', fontsize=16)
+    plt.tick_params(labelsize=16)
+    # plt.show()
+
     return fig
