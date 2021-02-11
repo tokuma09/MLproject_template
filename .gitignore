@@ -1,3 +1,5 @@
+# model file
+*.pkl
 # environment variable file
 my_env_file.env
 
