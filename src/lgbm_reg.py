@@ -4,7 +4,8 @@ import numpy as np
 from neptunecontrib.monitoring.lightgbm import neptune_monitor
 
 
-def train_and_predict(X_train, X_valid, y_train, y_valid, X_test, params, ind):
+def train_and_predict(X_train, X_valid, y_train, y_valid, X_test, params,
+                      fold_ind):
 
     lgb_train = lgb.Dataset(X_train, y_train)
     lgb_eval = lgb.Dataset(X_valid, y_valid, reference=lgb_train)
