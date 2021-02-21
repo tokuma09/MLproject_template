@@ -1,11 +1,16 @@
 import argparse
 import inspect
+import os
 import re
-from abc import ABCMeta, abstractmethod
-from pathlib import Path
-import pandas as pd
 import time
+from abc import ABCMeta, abstractmethod
 from contextlib import contextmanager
+
+import pandas as pd
+import yaml
+
+from GCSOperator import GCSOperator
+from global_vars import credential, project_id
 
 
 @contextmanager
@@ -22,6 +27,11 @@ def get_arguments():
                         '-f',
                         action='store_true',
                         help='Overwrite existing files')
+
+    parser.add_argument('--cloud',
+                        '-c',
+                        action='store_true',
+                        help='save features to GCS')
     return parser.parse_args()
 
 
@@ -32,12 +42,40 @@ def get_features(namespace):
             yield v()
 
 
-def generate_features(namespace, overwrite):
-    for f in get_features(namespace):
-        if f.train_path.exists() and f.test_path.exists() and not overwrite:
-            print(f.name, 'was skipped')
-        else:
-            f.run().save()
+def generate_features(namespace, overwrite, cloud):
+
+    if cloud:
+
+        # get bucket name
+        f = open("../config/config.yaml", "r+")
+        config = yaml.safe_load(f)
+        bucket_name = config['bucket_name']
+        gcso = GCSOperator(project_id, credential, bucket_name)
+
+        # ファイルの有無を確認する。
+        for f in get_features(namespace):
+            train_path = os.path.join(
+                f.train_path.split('/')[-2],
+                f.train_path.split('/')[-1])
+
+            test_path = os.path.join(
+                f.test_path.split('/')[-2],
+                f.test_path.split('/')[-1])
+
+            if gcso.is_exist(train_path) and gcso.is_exist(
+                    test_path) and not overwrite:
+
+                print(f.name, 'was skipped')
+            else:
+                f.run().save()
+    else:
+
+        for f in get_features(namespace):
+            if os.path.exists(f.train_path) and os.path.exists(
+                    f.test_path) and not overwrite:
+                print(f.name, 'was skipped')
+            else:
+                f.run().save()
 
 
 class Feature(metaclass=ABCMeta):
@@ -54,8 +92,8 @@ class Feature(metaclass=ABCMeta):
 
         self.train = pd.DataFrame()
         self.test = pd.DataFrame()
-        self.train_path = Path(self.dir) / f'{self.name}_train.feather'
-        self.test_path = Path(self.dir) / f'{self.name}_test.feather'
+        self.train_path = os.path.join(self.dir, f'{self.name}_train.feather')
+        self.test_path = os.path.join(self.dir, f'{self.name}_test.feather')
 
     def run(self):
         with timer(self.name):
