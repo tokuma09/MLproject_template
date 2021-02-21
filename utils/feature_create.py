@@ -1,9 +1,8 @@
 import pandas as pd
 import numpy as np
-
+import yaml
 from feature_base import Feature, get_arguments, generate_features
 
-Feature.dir = '../features'  # set dir
 train = pd.read_feather('../data/input/train.feather')
 test = pd.read_feather('../data/input/test.feather')
 all = pd.concat([train, test])
@@ -53,5 +52,14 @@ class Petal_width(Feature):
 if __name__ == '__main__':
     args = get_arguments()
 
+    if args.cloud:
+        f = open("../config/config.yaml", "r+")
+        config = yaml.safe_load(f)
+        bucket_name = config['bucket_name']
+        Feature.dir = f'gs://{bucket_name}/features'
+
+    else:
+        Feature.dir = '../features'  # set dir
+
     # generate features
-    generate_features(globals(), args.force)
+    generate_features(globals(), args.force, args.cloud)

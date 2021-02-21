@@ -1,6 +1,6 @@
-import datetime
 import importlib
 import os
+import pickle
 import sys
 
 import hydra
@@ -12,7 +12,6 @@ from sklearn.metrics import accuracy_score
 from sklearn.model_selection import StratifiedKFold
 
 sys.path.append('../utils')
-import random
 
 from data_loader import load_datasets, load_target
 from logging_metrics import logging_classification
@@ -105,6 +104,17 @@ def run(config: DictConfig) -> None:
     neptune.log_metric('CV score', score)
     for i in range(NUM_FOLDS):
         neptune.log_metric('fold score', scores[i])
+
+    # ---------------------------------
+    # save model
+    # ---------------------------------
+    print('***** Save models *****')
+    for ind, model in enumerate(models):
+        fname = f'{neptune.get_experiment().id}_model_{ind}.pkl'
+        fpath = os.path.join(base_dir, 'models', fname)
+
+        with open(fpath, mode='wb') as fp:
+            pickle.dump(model, fp)
 
     # ---------------------------------
     # save oof result

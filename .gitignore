@@ -1,8 +1,10 @@
+# model file
+*.pkl
 # environment variable file
 my_env_file.env
 
 # jupyter notebook
-.ipynb
+*.ipynb
 
 # hydra
 src/outputs
