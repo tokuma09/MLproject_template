@@ -7,3 +7,6 @@ features: ["sepal_length",
            "petal_width"]
 target_name: "target"
 ID_name: "index"
+
+
+bucket_name: "ml-project-iris"
