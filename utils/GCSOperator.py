@@ -121,6 +121,16 @@ class GCSOperator():
 
         print(f'Download {gcs_path} to {local_path}')
 
+    def is_exist(self, gcs_path, bucket_name=None):
+
+        if bucket_name is None:
+            blob = self._bucket.blob(gcs_path)
+        else:
+            bucket = self._client.get_bucket(bucket_name)
+            blob = bucket.blob(gcs_path)
+
+        return blob.exists()
+
     def load_pickle(self, gcs_path, bucket_name=None):
         """load_pickle
 
