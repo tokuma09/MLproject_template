@@ -6,7 +6,7 @@ from google.cloud import storage as gcs
 
 
 class GCSOperator():
-    def __init__(self, project_id, credentials, bucket_name):
+    def __init__(self, project_id, bucket_name, credentials=None):
         """GCSOperator GSC wrapper class
 
         This class provides following APIs.
@@ -21,10 +21,10 @@ class GCSOperator():
         ----------
         project_id : str
             GoogleCloudPlatform Project ID
-        credentials : str
-            GoogleCloudPlatform Credential Information
         bucket_name : str
             GoogleCloudStorage Bucket Name
+        credentials : str, optional
+            GoogleCloudPlatform Credential Information, by default None
         """
 
         self._client = gcs.Client(project_id, credentials=credentials)
