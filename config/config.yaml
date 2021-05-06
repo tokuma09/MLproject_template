@@ -7,6 +7,6 @@ features: ["sepal_length",
            "petal_width"]
 target_name: "target"
 ID_name: "index"
-
+cloud: true
 
 bucket_name: "ml-project-iris"
