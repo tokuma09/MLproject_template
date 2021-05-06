@@ -37,17 +37,23 @@ def run(config: DictConfig) -> None:
     module = importlib.import_module(config['model']['file'])
 
     # ---------------------------------
-    # load data
+    # load config
     # ---------------------------------
 
     feats = config['features']
     target_name = config['target_name']
     params = dict(config['model']['parameters'])
+    cloud = config['cloud']
 
-    X_train_all, X_test = load_datasets(feats, base_dir=base_dir)
-    y_train_all = load_target(target_name, base_dir=base_dir)
+    # ---------------------------------
+    # load data
+    # ---------------------------------
+    X_train_all, X_test = load_datasets(feats, base_dir=base_dir, cloud=cloud)
+    y_train_all = load_target(target_name, base_dir=base_dir, cloud=cloud)
 
+    # -------------------------------
     # start logging
+    # -------------------------------
     neptune.init(api_token=API_TOKEN,
                  project_qualified_name='tokuma09/Example')
     neptune.create_experiment(params=params,
@@ -115,7 +121,7 @@ def run(config: DictConfig) -> None:
 
         with open(fpath, mode='wb') as fp:
             pickle.dump(model, fp)
-
+            # ここにクラウド用のを書く
     # ---------------------------------
     # save oof result
     # ---------------------------------
@@ -132,6 +138,8 @@ def run(config: DictConfig) -> None:
         os.path.join(
             base_dir,
             f"features/valid_pred_{neptune.get_experiment().id}.feather"))
+
+    # ここにクラウド用のを書く
 
     # ---------------------------------
     # prepare submission
@@ -152,6 +160,8 @@ def run(config: DictConfig) -> None:
         base_dir, f'data/output/test_pred_{neptune.get_experiment().id}.csv'),
                index=False,
                header=None)
+
+    # ここにクラウド用のを書く
 
     neptune.stop()
 
