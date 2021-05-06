@@ -124,6 +124,7 @@ def save_oof(oof_preds, config, base_dir):
 
 
 def prepare_submission(y_test_preds, config, base_dir):
+    gcso = get_gcs_operator(config)
 
     target_name = config['target_name']
     print('***** Prepare submission *****')
@@ -135,8 +136,9 @@ def prepare_submission(y_test_preds, config, base_dir):
 
     # prepare submit data
     ID_name = config['ID_name']
+
     sub = pd.DataFrame(
-        pd.read_csv(os.path.join(base_dir, 'data/input/test.csv'))[ID_name])
+        pd.read_csv(gcso.get_fullpath('data/input/test.csv'))[ID_name])
 
     sub[target_name] = y_sub
     sub.to_csv(os.path.join(
