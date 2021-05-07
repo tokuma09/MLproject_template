@@ -135,8 +135,10 @@ def plot_confusion_matrix(cm,
 
     title:        the text to display at the top of the matrix
 
-    cmap:         the gradient of the values displayed from matplotlib.pyplot.cm
-                  see http://matplotlib.org/examples/color/colormaps_reference.html
+    cmap:         the gradient of the values displayed
+                  from matplotlib.pyplot.cm
+                  see
+                  http://matplotlib.org/examples/color/colormaps_reference.html
                   plt.get_cmap('jet') or plt.cm.Blues
 
     normalize:    If False, plot the raw numbers
@@ -144,11 +146,14 @@ def plot_confusion_matrix(cm,
 
     Usage
     -----
-    plot_confusion_matrix(cm           = cm,                  # confusion matrix created by
-                                                              # sklearn.metrics.confusion_matrix
-                          normalize    = True,                # show proportions
-                          target_names = y_labels_vals,       # list of names of the classes
-                          title        = best_estimator_name) # title of graph
+    plot_confusion_matrix(# sklearn.metrics.confusion_matrix
+                          cm = cm,
+                          # show proportions
+                          normalize    = True,
+                          # list of names of the classes
+                          target_names = y_labels_vals,
+                          # title of graph
+                          title        = best_estimator_name)
 
     Citiation
     ---------
