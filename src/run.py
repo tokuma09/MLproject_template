@@ -15,17 +15,18 @@ sys.path.append('../utils')
 
 from data_loader import load_datasets, load_target
 from GCSOperator import GCSOperator
-from global_vars import project_id
 from logging_metrics import logging_classification
 
 # global variable
 
 NUM_FOLDS = 3
 API_TOKEN = os.environ.get('NEPTUNE_API_TOKEN')
+
 scoring = accuracy_score  # evaluation metrics
 
 
-def get_gcs_operator(config):
+def get_gcs_operator(config,
+                     project_id=os.environ.get('GOOGLE_CLOUD_PROJECT')):
     # setup GCS operator
     bucket_name = config['bucket_name']
     gcso = GCSOperator(project_id, bucket_name)
@@ -150,6 +151,10 @@ def prepare_submission(y_test_preds, config, base_dir):
 @hydra.main(config_path='../config', config_name='config')
 def main(config: DictConfig) -> None:
 
+    # set data
+    os.environ['GOOGLE_CLOUD_PROJECT'] = config['project_id']
+    params = dict(config['model']['parameters'])
+
     # get base directory
     base_dir = os.path.dirname(hydra.utils.get_original_cwd())
 
@@ -160,7 +165,6 @@ def main(config: DictConfig) -> None:
     X_train_all, y_train_all, X_test = load_data(config, base_dir)
 
     # start logging
-    params = dict(config['model']['parameters'])
     neptune.init(api_token=API_TOKEN,
                  project_qualified_name='tokuma09/Example')
     neptune.create_experiment(params=params,
