@@ -2,7 +2,6 @@ import os
 import pandas as pd
 import yaml
 from GCSOperator import GCSOperator
-from global_vars import project_id
 
 
 def load_local_datasets(feats, base_dir):
@@ -63,7 +62,7 @@ def load_cloud_datasets(feats, base_dir):
     f = open(os.path.join(base_dir, "config/config.yaml"), "r+")
     config = yaml.safe_load(f)
     bucket_name = config['bucket_name']
-    gcso = GCSOperator(project_id, bucket_name)
+    gcso = GCSOperator(config['project_id'], bucket_name)
 
     # load data
     dfs = [
@@ -129,7 +128,7 @@ def load_cloud_target(target_name, base_dir):
     f = open(os.path.join(base_dir, "config/config.yaml"), "r+")
     config = yaml.safe_load(f)
     bucket_name = config['bucket_name']
-    gcso = GCSOperator(project_id, bucket_name)
+    gcso = GCSOperator(config['project_id'], bucket_name)
 
     # load data
     train = pd.read_feather(gcso.get_fullpath('data/input/train.feather'))

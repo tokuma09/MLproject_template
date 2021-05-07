@@ -10,7 +10,6 @@ import pandas as pd
 import yaml
 
 from GCSOperator import GCSOperator
-from global_vars import credential, project_id
 
 
 @contextmanager
@@ -50,7 +49,7 @@ def generate_features(namespace, overwrite, cloud):
         f = open("../config/config.yaml", "r+")
         config = yaml.safe_load(f)
         bucket_name = config['bucket_name']
-        gcso = GCSOperator(project_id, credential, bucket_name)
+        gcso = GCSOperator(config['project_id'], bucket_name)
 
         # ファイルの有無を確認する。
         for f in get_features(namespace):
