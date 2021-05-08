@@ -1,8 +1,19 @@
-version: '3'
+version: "3"
 
 services:
   python:
     build: .
     volumes:
       - ..:/root/project
-    env_file: ../my_env_file.env
+    stdin_open: true
+    tty: true
+    environment:
+      GOOGLE_APPLICATION_CREDENTIALS: /run/secrets/gcp_key
+      NEPTUNE_API_TOKEN: ${NEPTUNE_API_TOKEN}
+      GITHUB_PAT: ${GITHUB_PAT}
+    secrets:
+      - gcp_key
+
+secrets:
+  gcp_key:
+    file: /Users/tokuma/key/gcp_key.json

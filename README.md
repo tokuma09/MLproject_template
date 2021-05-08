@@ -34,27 +34,27 @@ This repository is a template directory for ML project and inspired by [upura](h
 
 ## Directory Explanation
 
-  - `config`: contains files that control feature settings, model parameters.
+  - `config`:
+    - `model`: model parameters
+    - `config.yaml`: ML settings
   - `data`
     - `input`: contains original data or feather files.
     - `output`: contains csv file for submission.
-  - `docker`: contains `Dockerfile` and `requirements.txt`
+  - `docker`: contains `Dockerfile` and `docker-compose.yml`
   - `features`: contains features created by train and test data.
+    - `importance`: feature importances
   - `fig`: contains some figures.
   - `logs`: contains logging data including features, a model, parameter and cv scores.
   - `models`: contains saved model.
   - `notebooks`: contains EDA codes.
   - `src`: contains model source codes and project-specific useful codes.
   - `utils`: contains generally useful codes.
+  - `requirements.txt`
 
-## Setup
+## setup
 
-To prepare docker container, it is useful to use `Makefile` in the project directory.
-
-- Build docker image: `make build`
-- Run docker container: `make run`
-- train model and predict: `python run.py`
-
+- `docker-compose up -d`: prepare docker container
+- `docker-compose run python bash`: start bash
 ## Actions
 
 - `cd utils && python convert_to_feather.py`: Convert csv files to feather files.
